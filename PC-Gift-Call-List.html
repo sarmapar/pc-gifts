@@ -1,0 +1,352 @@
+<title>PC Gift Call List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one centered working column. Step 1 upload, step 2 filters, step 3 copyable list. */
+:root {
+  --bg: #f6f8f7;
+  --surface: #ffffff;
+  --fg: #1c2a27;
+  --muted: #5d6e69;
+  --line: #d5dedb;
+  --accent: #1f6f5c;
+  --accent-fg: #ffffff;
+  --accent-soft: #e0f0ea;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111a18; --surface: #18241f; --fg: #e6efec; --muted: #9bb0aa; --line: #2c3d38;
+    --accent: #5cc4a6; --accent-fg: #0c1714; --accent-soft: #1d3a32; --warn: #f0c36b; --warn-soft: #3a2f14;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111a18; --surface: #18241f; --fg: #e6efec; --muted: #9bb0aa; --line: #2c3d38;
+  --accent: #5cc4a6; --accent-fg: #0c1714; --accent-soft: #1d3a32; --warn: #f0c36b; --warn-soft: #3a2f14;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 60ch; }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; font-weight: 700; }
+label { display: block; font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+input[type="text"], input[type="month"], select {
+  width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 9px 11px; min-height: 44px;
+}
+input:focus-visible, select:focus-visible, button:focus-visible, .drop:focus-visible, .sug li:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 1px;
+}
+.drop {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--line); border-radius: 8px; padding: 22px 16px; background: var(--bg);
+}
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop strong { color: var(--accent); }
+.drop small { color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+@media (max-width: 520px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.field { position: relative; min-width: 0; }
+.field .clear {
+  position: absolute; right: 4px; bottom: 4px; width: 36px; height: 36px; border: 0; background: none;
+  color: var(--muted); font-size: 1.2rem; cursor: pointer; border-radius: 6px;
+}
+.field input[type="text"] { padding-right: 40px; }
+.sug {
+  position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; max-height: 240px; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.sug li { padding: 9px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.sug li[aria-selected="true"], .sug li:hover { background: var(--accent-soft); }
+.sug li span { color: var(--muted); font-size: 0.85rem; }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-weight: 600; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.hint { color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+.results-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.results-head h2 { margin: 0; }
+.count { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; }
+button.primary {
+  font: inherit; font-weight: 700; background: var(--accent); color: var(--accent-fg); border: 0;
+  border-radius: 6px; padding: 10px 18px; min-height: 44px; cursor: pointer;
+}
+textarea {
+  width: 100%; min-height: 260px; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.95rem;
+  line-height: 1.6; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px;
+}
+.notice { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 10px 12px; font-size: 0.9rem; margin-top: 12px; }
+.privacy { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.loaded { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
+.loaded span { min-width: 0; overflow-wrap: anywhere; }
+.linkbtn { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; padding: 8px; min-height: 44px; }
+</style>
+
+<main>
+  <header>
+    <h1>PC Gift Call List</h1>
+    <p class="lede">Upload your Arbonne downloaded customer sheet, pick the month the free gift expires, and copy a ready-to-use list of names and phone numbers.</p>
+  </header>
+
+  <section id="uploadSec">
+    <h2>1. Your sheet</h2>
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose a CSV file">
+      <span><strong>Choose your CSV</strong> or drop it here</span>
+      <small id="dropNote">Nothing is uploaded anywhere. The file is read inside this page only.</small>
+    </div>
+    <input id="file" type="file" accept=".csv,text/csv" hidden>
+    <div id="notice" class="notice" hidden></div>
+  </section>
+
+  <section id="filterSec" hidden>
+    <h2>2. Who to include</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="month">Gift valid through</label>
+        <input id="month" type="month" placeholder="2026-10">
+      </div>
+      <div class="field" id="phoneWrap">
+        <label for="phoneCol">Phone number column</label>
+        <select id="phoneCol"></select>
+      </div>
+      <div class="field"><label for="f-DM">DM</label><input id="f-DM" type="text" autocomplete="off" placeholder="Start typing a name"><button class="clear" type="button" aria-label="Clear DM">×</button><ul class="sug" hidden></ul></div>
+      <div class="field"><label for="f-AM">AM</label><input id="f-AM" type="text" autocomplete="off" placeholder="Start typing a name"><button class="clear" type="button" aria-label="Clear AM">×</button><ul class="sug" hidden></ul></div>
+      <div class="field"><label for="f-RVP">RVP</label><input id="f-RVP" type="text" autocomplete="off" placeholder="Start typing a name"><button class="clear" type="button" aria-label="Clear RVP">×</button><ul class="sug" hidden></ul></div>
+      <div class="field"><label for="f-NVP">NVP</label><input id="f-NVP" type="text" autocomplete="off" placeholder="Start typing a name"><button class="clear" type="button" aria-label="Clear NVP">×</button><ul class="sug" hidden></ul></div>
+    </div>
+    <label class="check"><input id="onlyYes" type="checkbox" checked> Only customers with a free gift marked Yes</label>
+    <p class="hint">Leave a leader box empty to include everyone. Pick a suggestion to match that leader exactly.</p>
+  </section>
+
+  <section id="resultSec" hidden>
+    <div class="results-head">
+      <div><h2>3. Your list</h2><div class="count" id="count"></div></div>
+      <button id="copy" class="primary" type="button">Copy list</button>
+    </div>
+    <textarea id="out" readonly aria-label="Names and phone numbers" spellcheck="false"></textarea>
+    <p class="hint" id="skipNote"></p>
+  </section>
+
+  <p class="privacy">Customer data stays on your device and is gone when you close the page.</p>
+</main>
+
+<script>
+(function () {
+  var LEVELS = ["DM", "AM", "RVP", "NVP"];
+  var rows = [], cols = {};
+  var $ = function (id) { return document.getElementById(id); };
+
+  function parseCSV(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    var delim = (text.split("\n")[0].split("\t").length > text.split("\n")[0].split(",").length) ? "\t" : ",";
+    var out = [], row = [], cell = "", q = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+        else cell += c;
+      } else if (c === '"') q = true;
+      else if (c === delim) { row.push(cell); cell = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(cell); cell = ""; out.push(row); row = [];
+      } else cell += c;
+    }
+    if (cell !== "" || row.length) { row.push(cell); out.push(row); }
+    return out.filter(function (r) { return r.some(function (x) { return x.trim() !== ""; }); });
+  }
+
+  var MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  // Returns "YYYY-MM" or "" from formats like 10/2026, 10/15/2026, 2026-10-15, Oct 2026, 15-Oct-2026.
+  function toYM(s) {
+    s = (s || "").trim();
+    if (!s) return "";
+    var m;
+    if ((m = s.match(/^(\d{4})[-\/](\d{1,2})/))) return m[1] + "-" + pad(m[2]);
+    var name = s.toLowerCase().match(/[a-z]{3}/);
+    var yr = s.match(/\b(\d{4})\b/);
+    if (name && yr && MONTHS.indexOf(name[0]) > -1) return yr[1] + "-" + pad(MONTHS.indexOf(name[0]) + 1);
+    if ((m = s.match(/^(\d{1,2})[\/\-.](?:\d{1,2}[\/\-.])?(\d{4}|\d{2})$/))) {
+      var y = m[2].length === 2 ? "20" + m[2] : m[2];
+      return y + "-" + pad(m[1]);
+    }
+    return "";
+  }
+  function pad(n) { return String(n).length < 2 ? "0" + n : String(n); }
+  function norm(h) { return h.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+  function loadText(text, name) {
+    var table = parseCSV(text);
+    var note = $("notice");
+    note.hidden = true;
+    if (table.length < 2) return showNotice("That file looks empty. Download the customer sheet again and try once more.");
+    var heads = table[0].map(function (h) { return h.trim(); });
+    function find(test) { for (var i = 0; i < heads.length; i++) if (test(norm(heads[i]))) return i; return -1; }
+    cols = {
+      first: find(function (h) { return h === "firstname"; }),
+      last: find(function (h) { return h === "lastname"; }),
+      yes: find(function (h) { return h.indexOf("pcfreegift") === 0 && h.indexOf("validthrough") < 0 && h.indexOf("yes") > -1; }),
+      valid: find(function (h) { return h.indexOf("validthrough") > -1; }),
+      lvl: {}
+    };
+    if (cols.yes < 0) cols.yes = find(function (h) { return h.indexOf("pcfreegift") === 0 && h.indexOf("validthrough") < 0; });
+    LEVELS.forEach(function (L) { cols.lvl[L] = find(function (h) { return h === L.toLowerCase(); }); });
+    var missing = [];
+    if (cols.first < 0) missing.push("First Name");
+    if (cols.last < 0) missing.push("Last Name");
+    if (cols.valid < 0) missing.push("PC Free Gift Valid Through");
+    if (missing.length) return showNotice("Could not find these columns: " + missing.join(", ") + ". Check that this is the customer sheet.");
+
+    var phoneIdx = [];
+    heads.forEach(function (h, i) { if (/phone|mobile|cell/i.test(h)) phoneIdx.push(i); });
+    var sel = $("phoneCol");
+    sel.innerHTML = "";
+    if (!phoneIdx.length) {
+      showNotice("No phone column found, so the list will show names only.");
+      sel.innerHTML = '<option value="-1">None found</option>';
+    } else {
+      phoneIdx.forEach(function (i) { var o = document.createElement("option"); o.value = i; o.textContent = heads[i]; sel.appendChild(o); });
+      var pref = phoneIdx.filter(function (i) { return /^(phone|mobile|cell)/i.test(heads[i]); })[0];
+      if (pref !== undefined) sel.value = pref;
+    }
+    $("phoneWrap").hidden = phoneIdx.length < 2;
+
+    rows = table.slice(1);
+    $("dropNote").textContent = "Loaded " + (name || "file") + " (" + rows.length + " rows). Choose another file to replace it.";
+    $("filterSec").hidden = false;
+    $("resultSec").hidden = false;
+    var seen = {};
+    rows.forEach(function (r) { var v = toYM(r[cols.valid]); if (v) seen[v] = (seen[v] || 0) + 1; });
+    var keys = Object.keys(seen).sort();
+    var cur = new Date().toISOString().slice(0, 7);
+    var pick = keys.filter(function (k) { return k >= cur; })[0] || keys[keys.length - 1] || "";
+    if (!$("month").value) $("month").value = pick;
+    render();
+  }
+
+  function showNotice(msg) { var n = $("notice"); n.textContent = msg; n.hidden = false; }
+
+  function cell(r, i) { return i >= 0 && r[i] !== undefined ? r[i].trim() : ""; }
+
+  function render() {
+    var ym = $("month").value;
+    var onlyYes = $("onlyYes").checked;
+    var phoneI = parseInt($("phoneCol").value, 10);
+    if (isNaN(phoneI)) phoneI = -1;
+    var f = {};
+    LEVELS.forEach(function (L) { f[L] = $("f-" + L).value.trim().toLowerCase(); });
+    var lines = [], noPhone = 0;
+    rows.forEach(function (r) {
+      if (ym && toYM(r[cols.valid]) !== ym) return;
+      if (onlyYes && cols.yes > -1 && !/^(y|yes|true|1)$/i.test(cell(r, cols.yes))) return;
+      for (var k = 0; k < LEVELS.length; k++) {
+        var L = LEVELS[k];
+        if (f[L] && cell(r, cols.lvl[L]).toLowerCase() !== f[L]) return;
+      }
+      var parts = [cell(r, cols.first), cell(r, cols.last)];
+      var ph = cell(r, phoneI);
+      if (!ph) noPhone++;
+      if (ph) parts.push(ph);
+      lines.push(parts.filter(Boolean).join(" "));
+    });
+    $("out").value = lines.join("\n");
+    $("count").textContent = lines.length + (lines.length === 1 ? " customer" : " customers");
+    $("skipNote").textContent = noPhone ? noPhone + (noPhone === 1 ? " of these has" : " of these have") + " no phone number on the sheet." : "";
+  }
+
+  // Autocomplete for DM / AM / RVP / NVP
+  LEVELS.forEach(function (L) {
+    var input = $("f-" + L), field = input.parentNode, list = field.querySelector(".sug"), clear = field.querySelector(".clear");
+    var active = -1, items = [];
+    function options(q) {
+      var counts = {};
+      rows.forEach(function (r) { var v = cell(r, cols.lvl[L]); if (v) counts[v] = (counts[v] || 0) + 1; });
+      q = q.toLowerCase();
+      return Object.keys(counts).filter(function (v) { return !q || v.toLowerCase().indexOf(q) > -1; })
+        .sort(function (a, b) {
+          var as = a.toLowerCase().indexOf(q) === 0 ? 0 : 1, bs = b.toLowerCase().indexOf(q) === 0 ? 0 : 1;
+          return as - bs || a.localeCompare(b);
+        }).slice(0, 30).map(function (v) { return { v: v, n: counts[v] }; });
+    }
+    function open() {
+      if (cols.lvl[L] === undefined || cols.lvl[L] < 0) return close();
+      items = options(input.value);
+      list.innerHTML = "";
+      items.forEach(function (it, i) {
+        var li = document.createElement("li");
+        li.setAttribute("role", "option");
+        li.innerHTML = "<b></b><span></span>";
+        li.firstChild.textContent = it.v;
+        li.lastChild.textContent = it.n + " rows";
+        li.addEventListener("mousedown", function (e) { e.preventDefault(); choose(i); });
+        list.appendChild(li);
+      });
+      active = -1;
+      list.hidden = !items.length;
+    }
+    function close() { list.hidden = true; active = -1; }
+    function choose(i) { input.value = items[i].v; close(); render(); }
+    function mark() {
+      Array.prototype.forEach.call(list.children, function (li, i) {
+        li.setAttribute("aria-selected", i === active ? "true" : "false");
+        if (i === active) li.scrollIntoView({ block: "nearest" });
+      });
+    }
+    input.addEventListener("input", function () { open(); render(); });
+    input.addEventListener("focus", open);
+    input.addEventListener("blur", close);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") { e.preventDefault(); if (list.hidden) open(); active = Math.min(active + 1, items.length - 1); mark(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(active - 1, 0); mark(); }
+      else if (e.key === "Enter" && active > -1) { e.preventDefault(); choose(active); }
+      else if (e.key === "Escape") close();
+    });
+    clear.addEventListener("click", function () { input.value = ""; render(); input.focus(); });
+    if (false) close();
+  });
+
+  $("month").addEventListener("input", render);
+  $("onlyYes").addEventListener("change", render);
+  $("phoneCol").addEventListener("change", render);
+
+  $("copy").addEventListener("click", function () {
+    var ta = $("out"), btn = $("copy");
+    function done(ok) {
+      btn.textContent = ok ? "Copied" : "Press Ctrl+C to copy";
+      setTimeout(function () { btn.textContent = "Copy list"; }, 2000);
+    }
+    ta.focus(); ta.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(function () { done(true); }, function () {
+        var ok = false; try { ok = document.execCommand("copy"); } catch (e) {} done(ok);
+      });
+    } else { var ok = false; try { ok = document.execCommand("copy"); } catch (e) {} done(ok); }
+  });
+
+  function readFile(file) {
+    if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function () { loadText(String(rd.result), file.name); };
+    rd.readAsText(file);
+  }
+  var drop = $("drop");
+  drop.addEventListener("click", function () { $("file").click(); });
+  drop.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+  $("file").addEventListener("change", function (e) { readFile(e.target.files[0]); e.target.value = ""; });
+  ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); }); });
+  ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); }); });
+  drop.addEventListener("drop", function (e) { readFile(e.dataTransfer.files[0]); });
+})();
+</script>
